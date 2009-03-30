@@ -175,7 +175,7 @@ int cli_main( uint16_t port ) {
     addr.sin_addr.s_addr = 0;
     memset(&(addr.sin_zero), 0, sizeof(addr.sin_zero));
     if( bind(bindfd, (struct sockaddr*)&addr, sizeof(struct sockaddr)) ) {
-        fprintf( stderr, "Error: unable to bind to port %u", port );
+        fprintf( stderr, "Error: CLI unable to bind to port %u", port );
         return CLI_ERROR;
     }
 
