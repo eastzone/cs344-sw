@@ -1,0 +1,21 @@
+# Common defs for the Makefiles
+
+OSTYPE = $(shell uname)
+
+ifeq ($(OSTYPE),Linux)
+ARCH = -D_LINUX_
+SOCK = -lnsl
+endif
+
+ifeq ($(OSTYPE),SunOS)
+ARCH =  -D_SOLARIS_
+SOCK = -lnsl -lsocket
+SOLARIS_LIBS=-lrt
+endif
+
+ifeq ($(OSTYPE),Darwin)
+ARCH = -D_DARWIN_
+SOCK =
+endif
+
+LIBS= $(SOCK) -lm -lresolv -lpthread $(SOLARIS_LIBS)
