@@ -1,5 +1,6 @@
 /*
  * Filename: cli_help.h
+ * Author: David Underhill
  * Purpose: Provide help strings for the CLI.
  */
 

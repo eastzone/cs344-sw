@@ -1,5 +1,6 @@
 /*
  * Filename: socket_wrapper.h
+ * Author: David Underhill
  *
  * Purpose:  Define wrapper functions to handle some error conditions of various
  *           sockets methods.  This also includes various socket-related header

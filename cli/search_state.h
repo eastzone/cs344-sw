@@ -1,5 +1,6 @@
 /*
  * Filename: search_state.h
+ * Author: David Underhill
  * Purpose:  Define structure and functions for searching
  */
 

@@ -1,4 +1,5 @@
 /* Filename: helper.h
+ * Author: David Underhill
  * Purpose:  define some helper functions
  */
 

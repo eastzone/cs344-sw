@@ -1,5 +1,6 @@
 /*
  * Filename: cli_scanner.h
+ * Author: David Underhill
  * Purpose: (F)lex input file to generate a scanner for the CLI.
  */
 
