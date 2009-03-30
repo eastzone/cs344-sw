@@ -7,6 +7,9 @@
 #ifndef CLI_MAIN_H
 #define CLI_MAIN_H
 
+#ifdef _LINUX_
+#include <stdint.h> /* uintX_t */
+#endif
 #include "search_state.h"
 
 #define CLI_SHUTDOWN 0

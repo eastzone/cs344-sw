@@ -30,15 +30,11 @@
 
 #include <stdio.h>
 #include <unistd.h>
-
+#include "cli/cli_main.h"
 #include "sr_base.h"
 
-int run_user_level_network_program(void)
-{ /* -- dummy method for user level network app -- */
-    while(1)
-    { sleep(1); }
-    return 0;
-} /* -- run_user_level_network_program -- */
+/** run the command-line interface on CLI_PORT */
+#define CLI_PORT 23 /* telnet port */
 
 int main(int argc, char** argv)
 {
@@ -53,8 +49,9 @@ int main(int argc, char** argv)
 
     sr_init_low_level_subystem(argc, argv);
 
-    /* -- run user level program -- */
-    run_user_level_network_program();
+    /* start the command-line interface (blocks until the router terminates) */
+    if( cli_main( CLI_PORT ) == CLI_ERROR )
+        fprintf( stderr, "Error: unable to setup the command-line interface server\n" );
 
     return 0;
 } /* -- main -- */
