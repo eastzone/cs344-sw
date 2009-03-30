@@ -31,6 +31,9 @@ static int* pverbose;
 static int skip_next_prompt;
 
 #ifdef _STANDALONE_CLI_
+/**
+ * Initialize sr for the standalone binary which just runs the CLI.
+ */
 struct sr_instance* my_get_sr() {
     static struct sr_instance* sr = NULL;
     if( ! sr ) {
@@ -532,7 +535,7 @@ void cli_shutdown() {
 }
 
 void cli_traceroute( gross_ip_t* data ) {
-    cli_send_str( "traceroute is not yet operational.\n" );
+    cli_send_str( "not yet implemented: traceroute\n" );
 }
 
 void cli_opt_verbose( gross_option_t* data ) {
