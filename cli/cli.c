@@ -526,7 +526,9 @@ void cli_ping_flood( gross_ip_int_t* data ) {
 void cli_shutdown() {
     cli_send_str( "Shutting down the router ...\n" );
     router_shutdown = 1;
-    raise( SIGINT ); /* wake up cli_main thread blocked on accept() */
+
+    /* we could do a cleaner shutdown, but this is probably fine */
+    exit(0);
 }
 
 void cli_traceroute( gross_ip_t* data ) {
