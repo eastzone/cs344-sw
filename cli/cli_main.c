@@ -213,29 +213,3 @@ int cli_main( uint16_t port ) {
 
     return CLI_SHUTDOWN;
 }
-
-#if 0
-#ifdef _STANDALONE_CLI_
-
-/** prints out usage info for the standalone CLI */
-void usage( const char* name ) {
-    printf( "Usage: %s <port>\n", name );
-}
-
-/** entry point for the standalone CLI server */
-int main( int argc, char** argv ) {
-    uint16_t port;
-
-    if( argc != 2 ) {
-        usage( argc>0 ? argv[0] : "cli" );
-        exit( 1 );
-    }
-    else
-        port = atoi( argv[1] );
-
-    cli_main( port );
-    return 0;
-}
-
-#endif /* _STANDALONE_CLI_ */
-#endif
