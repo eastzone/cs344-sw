@@ -2,3 +2,5 @@
 *.o
 .*.d
 sr
+rtable
+.last_topo_num
