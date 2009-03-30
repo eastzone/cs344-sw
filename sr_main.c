@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
- * file:  sr_main.c 
- * Date:  Mon Feb 02 21:48:59 PST 2004 
- *        (adapted from sr_cli_main.c Wed Nov 26 03:02:17 PST 2003) 
+ * file:  sr_main.c
+ * Date:  Mon Feb 02 21:48:59 PST 2004
+ *        (adapted from sr_cli_main.c Wed Nov 26 03:02:17 PST 2003)
  * Author:  Martin Casado <casado@stanford.edu>
  *
  * Description:
@@ -9,10 +9,10 @@
  * Main function for sr_router.  Here we basically handle the command
  * line options and start the 'lower level' routing functionality which
  * involves connecting to the VNS server and negotiating the topology
- * and host information.  
+ * and host information.
  *
  * The router functionality should be extended to support:
- *  
+ *
  *   - ARP
  *   - ICMP
  *   - IP
@@ -42,15 +42,15 @@ int run_user_level_network_program(void)
 
 int main(int argc, char** argv)
 {
-    /* --  
-     *  start the low-level network subsystem 
+    /* --
+     *  start the low-level network subsystem
      *
      *  Note: sr recognizes the following command
      *        line args (in getopt format)
      *        "hs:v:p:c:t:r:l:" and doesn't
      *        clean argv
      *                                            -- */
-    
+
     sr_init_low_level_subystem(argc, argv);
 
     /* -- run user level program -- */

@@ -1,13 +1,13 @@
 /*-----------------------------------------------------------------------------
  * file:  sr_base_internal.h
- * date:  Tue Feb 03 11:18:32 PST 2004 
+ * date:  Tue Feb 03 11:18:32 PST 2004
  * Author: Martin Casado
  *
  * Description:
  *
  * House all the definitions for the basic core router definitions.  This
  * should not be included by any "user level" files such as main or
- * network applications that run on the router.  Any low level code 
+ * network applications that run on the router.  Any low level code
  * (which would normally be kernel level) will require these definitions).
  *
  * Low level network code should use the functios:
@@ -48,7 +48,7 @@
      } while(0)
 #define DebugMAC(x) \
   do { int ivyl; for(ivyl=0; ivyl<5; ivyl++) printf("%02x:", \
-  (unsigned char)(x[ivyl])); printf("%02x",(unsigned char)(x[5])); } while (0) 
+  (unsigned char)(x[ivyl])); printf("%02x",(unsigned char)(x[5])); } while (0)
 #else
 #define Debug(x, args...) do{}while(0)
 #define DebugMAC(x) do{}while(0)
@@ -57,7 +57,7 @@
 /* ----------------------------------------------------------------------------
  * struct sr_vns_if
  *
- * Abstraction for a VNS virtual host interface 
+ * Abstraction for a VNS virtual host interface
  *
  * -------------------------------------------------------------------------- */
 
@@ -68,12 +68,12 @@ struct sr_vns_if
     uint32_t ip;
     uint32_t mask;
     uint32_t speed;
-}; 
+};
 
 /* ----------------------------------------------------------------------------
  * struct sr_instance
  *
- * Encapsulation of the state for a single virtual router. 
+ * Encapsulation of the state for a single virtual router.
  *
  * -------------------------------------------------------------------------- */
 
@@ -82,7 +82,7 @@ struct sr_instance
     /* VNS specific */
     int  sockfd;    /* socket to server */
     char user[32];  /* user name */
-    char vhost[32]; /* host name */ 
+    char vhost[32]; /* host name */
     char lhost[32]; /* host name of machine running client */
     char rtable[32];/* filename for routing table          */
     unsigned short topo_id; /* topology id */
@@ -95,18 +95,18 @@ struct sr_instance
 };
 
 /* ----------------------------------------------------------------------------
- * See method definitions in sr_base.c for detailed explanation of the 
+ * See method definitions in sr_base.c for detailed explanation of the
  * following two methods.
  * -------------------------------------------------------------------------*/
 
 void* sr_get_subsystem(struct sr_instance* sr);
 void  sr_set_subsystem(struct sr_instance* sr, void* core);
 struct sr_instance* sr_get_global_instance(struct sr_instance* sr);
-    
+
 
 /* ----------------------------------------------------------------------------
  * Integration methods for calling subsystem (e.g. the router).  These
- * may be replaced by callback functions that get registered with 
+ * may be replaced by callback functions that get registered with
  * sr_instance.
  * -------------------------------------------------------------------------*/
 
@@ -114,16 +114,16 @@ void sr_integ_init(struct sr_instance* );
 void sr_integ_hw_setup(struct sr_instance* ); /* called after hwinfo */
 void sr_integ_destroy(struct sr_instance* );
 void sr_integ_close(struct sr_instance* sr);
-void sr_integ_input(struct sr_instance* sr, 
+void sr_integ_input(struct sr_instance* sr,
                    const uint8_t * packet/* borrowed */,
                    unsigned int len,
                    const char* interface/* borrowed */);
 void sr_integ_add_interface(struct sr_instance*,
                             struct sr_vns_if* /* borrowed */);
 
-int sr_integ_output(struct sr_instance* sr /* borrowed */, 
+int sr_integ_output(struct sr_instance* sr /* borrowed */,
                     uint8_t* buf /* borrowed */ ,
-                    unsigned int len, 
+                    unsigned int len,
                     const char* iface /* borrowed */);
 
 uint32_t sr_findsrcip(uint32_t dest /* nbo */);
@@ -132,9 +132,9 @@ uint32_t sr_integ_ip_output(uint8_t* payload /* given */,
                             uint32_t src, /* nbo */
                             uint32_t dest, /* nbo */
                             int len);
-int sr_integ_low_level_output(struct sr_instance* sr /* borrowed */, 
+int sr_integ_low_level_output(struct sr_instance* sr /* borrowed */,
                              uint8_t* buf /* borrowed */ ,
-                             unsigned int len, 
+                             unsigned int len,
                              const char* iface /* borrowed */);
 uint32_t sr_integ_findsrcip(uint32_t dest /* nbo */);
 

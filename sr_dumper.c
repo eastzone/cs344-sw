@@ -11,7 +11,7 @@
 
 /*-----------------------------------------------------------------------------
  * Method: sr_log_packet()
- * Scope:  Global 
+ * Scope:  Global
  *
  *---------------------------------------------------------------------------*/
 
@@ -59,9 +59,9 @@ sf_write_header(FILE *fp, int linktype, int thiszone, int snaplen)
  */
 FILE *
 sr_dump_open(const char *fname, int thiszone, int snaplen)
-{       
+{
   FILE *fp;
- 
+
         if (fname[0] == '-' && fname[1] == '\0')
                 fp = stdout;
         else {

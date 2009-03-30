@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
  * file:   sr_lwtcp_glue.c
- * date:   Thu Nov 20 14:34:07 PST 2003 
- * Author: Martin Casado 
+ * date:   Thu Nov 20 14:34:07 PST 2003
+ * Author: Martin Casado
  *
  * Description:
  *
@@ -36,7 +36,7 @@
  *
  * Called by sr to send a packet to the transport layer.  Packet is assumed
  * to have a header with a correct ip length.  The memory holding packet is
- * left untouched. 
+ * left untouched.
  *
  *---------------------------------------------------------------------------*/
 
@@ -69,7 +69,7 @@ void sr_transport_input(uint8_t* packet /* borrowed */)
  * Called by lwip to pair a destination with the correct source (based on
  * the routing table.  ip_integ_route(..) must be implemented by the network
  * level implementation
- * 
+ *
  *---------------------------------------------------------------------------*/
 
 uint32_t /*nbo*/ ip_route(struct ip_addr *dest)
@@ -107,7 +107,7 @@ err_t sr_lwip_output(struct pbuf *p, struct ip_addr *src, struct ip_addr *dst, u
     memcpy(payload + offset, p->payload, p->len);
     offset += p->len;
 
-    for(q = p->next; q != NULL; q = q->next) 
+    for(q = p->next; q != NULL; q = q->next)
     {
         memcpy(payload + offset, q->payload, q->len);
         offset += q->len;

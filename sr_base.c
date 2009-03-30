@@ -1,6 +1,6 @@
 /*-----------------------------------------------------------------------------
- * File: sr_base.c 
- * Date: Spring 2002 
+ * File: sr_base.c
+ * Date: Spring 2002
  * Author: Martin Casado <casado@stanford.edu>
  *
  * Entry module to the low level networking subsystem of the router.
@@ -11,8 +11,8 @@
  *    the main thread before other threads have been started.
  *
  *  - lwip requires that only one instance of the IP stack exist, therefore
- *    at the moment we don't support multiple instances of sr.  However 
- *    support for this (given a cooperative tcp stack) would be simple, 
+ *    at the moment we don't support multiple instances of sr.  However
+ *    support for this (given a cooperative tcp stack) would be simple,
  *    simple allow sr_init_low_level_subystem(..) to create new sr_instances
  *    each time they are called and return an identifier.  This identifier
  *    must be passed into sr_global_instance(..) to return the correct
@@ -70,7 +70,7 @@ static void sr_destroy_instance(struct sr_instance* sr);
 /*----------------------------------------------------------------------------
  * sr_init_low_level_subystem
  *
- * Entry method to the sr low level network subsystem. Responsible for 
+ * Entry method to the sr low level network subsystem. Responsible for
  * managing, connecting to the server, reserving the topology, reading
  * the hardware information and starting the packet recv(..) loop in a
  * seperate thread.
@@ -83,9 +83,9 @@ static void sr_destroy_instance(struct sr_instance* sr);
 int sr_init_low_level_subystem(int argc, char **argv)
 {
     /* -- VNS default parameters -- */
-    char  *host   = "vrhost"; 
-    char  *rtable = "rtable"; 
-    char  *server = "171.67.71.18"; 
+    char  *host   = "vrhost";
+    char  *rtable = "rtable";
+    char  *server = "171.67.71.18";
     uint16_t port =  12345;
     uint16_t topo =  0;
 
@@ -105,14 +105,14 @@ int sr_init_low_level_subystem(int argc, char **argv)
         return 1;
     }
 
-    sr = (struct sr_instance*) malloc(sizeof(struct sr_instance)); 
+    sr = (struct sr_instance*) malloc(sizeof(struct sr_instance));
 
     while ((c = getopt(argc, argv, "hs:v:p:c:t:r:l:")) != EOF)
     {
-        switch (c) 
+        switch (c)
         {
             case 'h':
-                usage(argv[0]); 
+                usage(argv[0]);
                 exit(0);
                 break;
             case 'p':
@@ -122,19 +122,19 @@ int sr_init_low_level_subystem(int argc, char **argv)
                 topo = atoi((char *) optarg);
                 break;
             case 'v':
-                host = optarg; 
+                host = optarg;
                 break;
             case 'r':
-                rtable = optarg; 
+                rtable = optarg;
                 break;
             case 'c':
-                client = optarg; 
+                client = optarg;
                 break;
             case 's':
-                server = optarg; 
+                server = optarg;
                 break;
             case 'l':
-                logfile = optarg; 
+                logfile = optarg;
                 break;
         } /* switch */
     } /* -- while -- */
@@ -143,10 +143,10 @@ int sr_init_low_level_subystem(int argc, char **argv)
     Debug(" \n ");
     Debug(" < -- Starting sr in cpu mode -- >\n");
     Debug(" \n ");
-#else    
+#else
     Debug(" < -- Starting sr in router mode  -- >\n");
     Debug(" \n ");
-#endif /* _CPUMODE_ */   
+#endif /* _CPUMODE_ */
 
     /* -- required by lwip, must be called from the main thread -- */
     sys_thread_init();
@@ -162,11 +162,11 @@ int sr_init_low_level_subystem(int argc, char **argv)
     if ( sr_cpu_init_hardware(sr, CPU_HW_FILENAME) )
     { exit(1); }
     sr_integ_hw_setup(sr);
-#else     
+#else
     sr->topo_id = topo;
     strncpy(sr->vhost,  host,    SR_NAMELEN);
     strncpy(sr->rtable, rtable, SR_NAMELEN);
-#endif /* _CPUMODE_ */   
+#endif /* _CPUMODE_ */
 
     if(! client )
     { sr_set_user(sr); }
@@ -180,7 +180,7 @@ int sr_init_low_level_subystem(int argc, char **argv)
     }
 
     /* -- log all packets sent/received to logfile (if non-null) -- */
-    sr_vns_init_log(sr, logfile); 
+    sr_vns_init_log(sr, logfile);
 
     sr_lwip_transport_startup();
 
@@ -196,16 +196,15 @@ int sr_init_low_level_subystem(int argc, char **argv)
 
     /* read from server until the hardware is setup */
     while (! sr->hw_init )
-    { 
+    {
         if(sr_vns_read_from_server(sr) == -1 )
-        { 
-            fprintf(stderr, "Error: could not get hardware information "); 
-            fprintf(stderr, "from the server"); 
+        {
+            fprintf(stderr, "Error: could not get hardware information from the server\n");
             sr_destroy_instance(sr);
             return 1;
         }
     }
-#endif    
+#endif
 
     /* -- start low-level network thread, dissown sr -- */
     sys_thread_new(sr_low_level_network_subsystem, (void*)sr /* dissown */);
@@ -217,7 +216,7 @@ int sr_init_low_level_subystem(int argc, char **argv)
  * Method: sr_set_subsystem(..)
  * Scope: Global
  *
- * Set the router core in sr_instance 
+ * Set the router core in sr_instance
  *
  *---------------------------------------------------------------------------*/
 
@@ -231,7 +230,7 @@ void sr_set_subsystem(struct sr_instance* sr, void* core)
  * Method: sr_get_subsystem(..)
  * Scope: Global
  *
- * Return the sr router core 
+ * Return the sr router core
  *
  *---------------------------------------------------------------------------*/
 
@@ -249,13 +248,13 @@ void* sr_get_subsystem(struct sr_instance* sr)
  *---------------------------------------------------------------------------*/
 
 struct sr_instance* sr_get_global_instance(struct sr_instance* sr)
-{ 
+{
     static struct sr_instance* sr_global_instance = 0;
 
     if ( sr )
     { sr_global_instance = sr; }
 
-    return sr_global_instance; 
+    return sr_global_instance;
 } /* -- sr_get_global_instance -- */
 
 /*-----------------------------------------------------------------------------
@@ -274,13 +273,13 @@ static void sr_low_level_network_subsystem(void *arg)
 #ifdef _CPUMODE_
     /* -- whizbang main loop ;-) */
     while( sr_cpu_input(sr) == 1);
-#else    
+#else
     /* -- whizbang main loop ;-) */
     while( sr_vns_read_from_server(sr) == 1);
-#endif    
+#endif
 
    /* -- this is the end ... my only friend .. the end -- */
-    sr_destroy_instance(sr); 
+    sr_destroy_instance(sr);
 } /* --  sr_low_level_network_subsystem -- */
 
 /*-----------------------------------------------------------------------------
@@ -326,7 +325,7 @@ static void sr_set_user(struct sr_instance* sr)
 
 /*-----------------------------------------------------------------------------
  * Method: sr_init_instance(..)
- * Scope:  Local 
+ * Scope:  Local
  *
  *----------------------------------------------------------------------------*/
 
@@ -352,7 +351,7 @@ void sr_init_instance(struct sr_instance* sr)
 
 /*-----------------------------------------------------------------------------
  * Method: sr_destroy_instance(..)
- * Scope:  local 
+ * Scope:  local
  *
  *----------------------------------------------------------------------------*/
 

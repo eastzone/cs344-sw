@@ -1,11 +1,11 @@
 /*-----------------------------------------------------------------------------
- * File: sr_vns.c 
+ * File: sr_vns.c
  * Start Date: Sometime in Spring 2002
  * Authors: Guido Apanzeller, Vikram Vijayaraghaven, Martin Casado
  * Contact: casado@stanford.edu
  *
  * Provides core functionality for communicating with the VNS.
- * 
+ *
  *---------------------------------------------------------------------------*/
 
 #include <stdio.h>
@@ -33,7 +33,7 @@
 
 /*-----------------------------------------------------------------------------
  * Method: sr_vns_init_log(..)
- * Scope: Global 
+ * Scope: Global
  *---------------------------------------------------------------------------*/
 
 void sr_vns_init_log(struct sr_instance* sr, char* logfile)
@@ -41,7 +41,7 @@ void sr_vns_init_log(struct sr_instance* sr, char* logfile)
     if (!logfile)
     { return; }
 
-    sr->logfile = sr_dump_open(logfile, 0, SR_PACKET_DUMP_SIZE);  
+    sr->logfile = sr_dump_open(logfile, 0, SR_PACKET_DUMP_SIZE);
     if(!sr->logfile)
     {
         fprintf(stderr,"Error opening up dump file %s\n",
@@ -52,7 +52,7 @@ void sr_vns_init_log(struct sr_instance* sr, char* logfile)
 
 /*-----------------------------------------------------------------------------
  * Method: sr_close_instance(..)
- * Scope: Global 
+ * Scope: Global
  *
  *----------------------------------------------------------------------------*/
 void sr_close_instance(struct sr_instance* sr)
@@ -67,7 +67,7 @@ void sr_close_instance(struct sr_instance* sr)
 
 /*-----------------------------------------------------------------------------
  * Method: sr_vns_connected_to_server()
- * Scope: Global 
+ * Scope: Global
  *
  * Test whether we are already connected to a server
  * ---------------------------------------------------------------------------*/
@@ -86,13 +86,13 @@ int sr_vns_connected_to_server(struct sr_instance* sr)
 
 /*-----------------------------------------------------------------------------
  * Method: sr_connect_to_server()
- * Scope: Global 
+ * Scope: Global
  *
  * Connect to the virtual server
- * 
+ *
  * RETURN VALUES:
  *
- *  0 on success 
+ *  0 on success
  *  something other than zero on error
  *
  *---------------------------------------------------------------------------*/
@@ -120,7 +120,7 @@ int sr_vns_connect_to_server(struct sr_instance* sr,unsigned short port,
     sr->sr_addr.sin_port = htons(port);
 
     /* grab hosts address from domain name */
-    if ((hp = gethostbyname(server))==0) 
+    if ((hp = gethostbyname(server))==0)
     {
         perror("gethostbyname:sr_client.c::sr_connect_to_server(..)");
         return -1;
@@ -137,7 +137,7 @@ int sr_vns_connect_to_server(struct sr_instance* sr,unsigned short port,
     }
 
     /* attempt to connect to the server */
-    if (connect(sr->sockfd, (struct sockaddr *)&(sr->sr_addr), 
+    if (connect(sr->sockfd, (struct sockaddr *)&(sr->sr_addr),
                 sizeof(sr->sr_addr)) < 0)
     {
         perror("connect(..):sr_vns.c::sr_connect_to_server(..)");
@@ -145,7 +145,7 @@ int sr_vns_connect_to_server(struct sr_instance* sr,unsigned short port,
         return -1;
     }
 
-    /* send sr_OPEN message to server */ 
+    /* send sr_OPEN message to server */
     command.mLen   = htonl(sizeof(c_open));
     command.mType  = htonl(VNSOPEN);
     command.topoID = htons(sr->topo_id);
@@ -162,8 +162,8 @@ int sr_vns_connect_to_server(struct sr_instance* sr,unsigned short port,
 } /* -- sr_connect_to_server -- */
 
 /*-----------------------------------------------------------------------------
- * Method: sr_handle_hwinfo(..) 
- * scope: global 
+ * Method: sr_handle_hwinfo(..)
+ * scope: global
  *
  *
  * Read, from the server, the hardware information for the reserved host.
@@ -181,7 +181,7 @@ int sr_handle_hwinfo(struct sr_instance* sr, c_hwinfo* hwinfo)
     assert(hwinfo);
 
     num_entries = (ntohl(hwinfo->mLen) - (2*sizeof(uint32_t)))/sizeof(c_hw_entry);
-    Debug("Received Hardware Info with %d entries\n",num_entries); 
+    Debug("Received Hardware Info with %d entries\n",num_entries);
 
     vns_if.name[0] = 0;
 
@@ -192,17 +192,17 @@ int sr_handle_hwinfo(struct sr_instance* sr, c_hwinfo* hwinfo)
             case HWFIXEDIP:
                 Debug("Fixed IP: %s\n",inet_ntoa(
                             *((struct in_addr*)(hwinfo->mHWInfo[i].value))));
-                break;    
-            case HWINTERFACE:    
+                break;
+            case HWINTERFACE:
                 Debug("Interface: %s\n",hwinfo->mHWInfo[i].value);
                 if (vns_if.name[0])
                 { sr_integ_add_interface(sr, &vns_if); vns_if.name[0] = 0; }
                 strncpy(vns_if.name, hwinfo->mHWInfo[i].value, SR_NAMELEN);
                 break;
-            case HWSPEED:    
+            case HWSPEED:
                 Debug("Speed: %d\n",
                         ntohl(*((unsigned int*)hwinfo->mHWInfo[i].value)));
-                vns_if.speed = 
+                vns_if.speed =
                     ntohl(*((unsigned int*)hwinfo->mHWInfo[i].value));
                 break;
             case HWSUBNET:
@@ -214,7 +214,7 @@ int sr_handle_hwinfo(struct sr_instance* sr, c_hwinfo* hwinfo)
                             *((struct in_addr*)(hwinfo->mHWInfo[i].value))));
                 vns_if.mask = *((uint32_t*)hwinfo->mHWInfo[i].value);
                 break;
-            case HWETHIP:    
+            case HWETHIP:
                 Debug("Ethernet IP: %s\n",inet_ntoa(
                             *((struct in_addr*)(hwinfo->mHWInfo[i].value))));
                 vns_if.ip = *((uint32_t*)hwinfo->mHWInfo[i].value);
@@ -223,7 +223,7 @@ int sr_handle_hwinfo(struct sr_instance* sr, c_hwinfo* hwinfo)
                 Debug("Hardware Address: ");
                 DebugMAC(hwinfo->mHWInfo[i].value);
                 Debug("\n");
-                memcpy(vns_if.addr, 
+                memcpy(vns_if.addr,
                         (unsigned char*)hwinfo->mHWInfo[i].value, 6);
                 break;
             default:
@@ -244,8 +244,8 @@ int sr_handle_hwinfo(struct sr_instance* sr, c_hwinfo* hwinfo)
 } /* -- sr_handle_hwinfo -- */
 
 /*-----------------------------------------------------------------------------
- * Method: sr_vns_read_from_server(..) 
- * Scope: global 
+ * Method: sr_vns_read_from_server(..)
+ * Scope: global
  *
  * Houses main while loop for communicating with the virtual router server.
  *
@@ -262,7 +262,7 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
     assert(sr);
 
     /*---------------------------------------------------------------------------
-      Read a command from the server 
+      Read a command from the server
       -------------------------------------------------------------------------*/
 
     bytes_read = 0;
@@ -273,7 +273,7 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
         do
         { /* -- just in case SIGALRM breaks recv -- */
             errno = 0; /* -- hacky glibc workaround -- */
-            if((ret = recv(sr->sockfd,((uint8_t*)&len) + bytes_read, 
+            if((ret = recv(sr->sockfd,((uint8_t*)&len) + bytes_read,
                             4 - bytes_read, 0)) == -1)
             {
                 if ( errno == EINTR )
@@ -291,7 +291,7 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
     if ( len > 10000 || len < 0 )
     {
         fprintf(stderr,"Error: command length to large %d\n",len);
-        close(sr->sockfd); 
+        close(sr->sockfd);
         return -1;
     }
 
@@ -301,7 +301,7 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
         return -1;
     }
 
-    /* set first field of command since we've already read it */ 
+    /* set first field of command since we've already read it */
     *((int *)buf) = htonl(len);
 
     bytes_read = 0;
@@ -318,12 +318,12 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
                 if ( errno == EINTR )
                 { continue; }
                 fprintf(stderr,"Error: failed reading command body %d\n",ret);
-                close(sr->sockfd); 
+                close(sr->sockfd);
                 return -1;
             }
             bytes_read += ret;
         } while (errno == EINTR); /* be mindful of signals */
-    } 
+    }
 
     /* My entry for most unreadable line of code - guido */
     /* ... you win - mc                                  */
@@ -357,13 +357,13 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
             sr_integ_close(sr);
             if(buf)
             { free(buf); }
-            return 0;      
+            return 0;
             break;
 
             /* -------------     VNSHWINFO     -------------------- */
 
         case VNSHWINFO:
-            sr_handle_hwinfo(sr,(c_hwinfo*)buf); 
+            sr_handle_hwinfo(sr,(c_hwinfo*)buf);
             break;
 
         default:
@@ -387,9 +387,9 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
  *
  *---------------------------------------------------------------------------*/
 
-int sr_vns_send_packet(struct sr_instance* sr /* borrowed */, 
+int sr_vns_send_packet(struct sr_instance* sr /* borrowed */,
                        uint8_t* buf /* borrowed */ ,
-                       unsigned int len, 
+                       unsigned int len,
                        const char* iface /* borrowed */)
 {
     c_packet_header *sr_pkt;
@@ -422,7 +422,7 @@ int sr_vns_send_packet(struct sr_instance* sr /* borrowed */,
 
     if ( pthread_mutex_lock(&(sr->send_lock)) )
     { assert (0); }
-    if( write(sr->sockfd, sr_pkt, total_len) < (signed int)total_len ) 
+    if( write(sr->sockfd, sr_pkt, total_len) < (signed int)total_len )
     {
         fprintf(stderr, "Error writing packet\n");
         free(sr_pkt);

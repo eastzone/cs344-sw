@@ -1,12 +1,12 @@
 /*-----------------------------------------------------------------------------
-   File:   vnscommand.h 
-   Date:   Sat Apr 06 21:58:07 PST 2002 
+   File:   vnscommand.h
+   Date:   Sat Apr 06 21:58:07 PST 2002
    Contact:  casado@stanford.edu
-  
+
    Description:
-  
+
    A c-style declaration of commands for the virtual router.
-  
+
   ---------------------------------------------------------------------------*/
 
 #ifndef __VNSCOMMAND_H
@@ -27,14 +27,14 @@
 typedef struct
 {
     uint32_t mLen;
-    uint32_t mType;        
+    uint32_t mType;
 }__attribute__ ((__packed__)) c_base;
 
 /*-----------------------------------------------------------------------------
                                  OPEN
   ---------------------------------------------------------------------------*/
 
-typedef struct 
+typedef struct
 {
 
     uint32_t mLen;
@@ -52,36 +52,36 @@ typedef struct
                                  CLOSE
   ---------------------------------------------------------------------------*/
 
-typedef struct 
+typedef struct
 {
 
-    uint32_t mLen; 
-    uint32_t mType; 
+    uint32_t mLen;
+    uint32_t mType;
     char     mErrorMessage[256];
 
 }__attribute__ ((__packed__)) c_close;
 
 /*-----------------------------------------------------------------------------
-                                HWREQUEST 
+                                HWREQUEST
   ---------------------------------------------------------------------------*/
 
-typedef struct 
+typedef struct
 {
 
     uint32_t mLen;
-    uint32_t mType; 
+    uint32_t mType;
 
 }__attribute__ ((__packed__)) c_hwrequest;
 
 /*-----------------------------------------------------------------------------
-                                 BANNER 
+                                 BANNER
   ---------------------------------------------------------------------------*/
 
-typedef struct 
+typedef struct
 {
 
-    uint32_t mLen; 
-    uint32_t mType; 
+    uint32_t mLen;
+    uint32_t mType;
     char     mBannerMessage[256];
 
 }__attribute__ ((__packed__)) c_banner;
@@ -110,7 +110,7 @@ typedef struct
 }__attribute__ ((__packed__)) c_packet_header;
 
 /*-----------------------------------------------------------------------------
-                               HWInfo 
+                               HWInfo
   ----------------------------------------------------------------------------*/
 
 #define HWINTERFACE    1

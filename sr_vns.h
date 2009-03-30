@@ -1,7 +1,7 @@
 /*-----------------------------------------------------------------------------
  * file:   sr_vns.h
- * date:   Fri Nov 21 13:06:27 PST 2003 
- * Author: Martin Casado 
+ * date:   Fri Nov 21 13:06:27 PST 2003
+ * Author: Martin Casado
  *
  * Description:
  *

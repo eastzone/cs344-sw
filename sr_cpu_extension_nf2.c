@@ -1,6 +1,6 @@
 /*-----------------------------------------------------------------------------
- * file:  sr_cpu_extension_nf2.c 
- * date:  Mon Feb 09 16:58:30 PST 2004 
+ * file:  sr_cpu_extension_nf2.c
+ * date:  Mon Feb 09 16:58:30 PST 2004
  * Author: Martin Casado
  *
  * 2007-Apr-04 04:57:55 AM - Modified to support NetFPGA v2.1 /mc
@@ -42,7 +42,7 @@ static void     asci_to_ether(const char* addr, uint8_t mac[6]);
 
 /*-----------------------------------------------------------------------------
  * Method: sr_cpu_init_hardware(..)
- * scope: global 
+ * scope: global
  *
  * Read information for each of the router's interfaces from hwfile
  *
@@ -60,7 +60,7 @@ static void     asci_to_ether(const char* addr, uint8_t mac[6]);
 int sr_cpu_init_hardware(struct sr_instance* sr, const char* hwfile)
 {
     struct sr_vns_if vns_if;
-    FILE* fp = 0; 
+    FILE* fp = 0;
     char line[1024];
     char buf[SR_NAMELEN];
     char *tmpptr;
@@ -85,7 +85,7 @@ int sr_cpu_init_hardware(struct sr_instance* sr, const char* hwfile)
             fprintf(stderr, "Bad formatting in cpu hardware file\n");
             return 1;
         }
-        Debug(" - Name [%s] ", buf); 
+        Debug(" - Name [%s] ", buf);
         strncpy(vns_if.name, buf, SR_NAMELEN);
         /* -- read interface ip into buf -- */
         if(! (tmpptr = copy_next_field(fp, tmpptr, buf)) )
@@ -94,7 +94,7 @@ int sr_cpu_init_hardware(struct sr_instance* sr, const char* hwfile)
             fprintf(stderr, "Bad formatting in cpu hardware file\n");
             return 1;
         }
-        Debug(" IP [%s] ", buf); 
+        Debug(" IP [%s] ", buf);
         vns_if.ip = asci_to_nboip(buf);
 
         /* -- read interface mask into buf -- */
@@ -104,7 +104,7 @@ int sr_cpu_init_hardware(struct sr_instance* sr, const char* hwfile)
             fprintf(stderr, "Bad formatting in cpu hardware file\n");
             return 1;
         }
-        Debug(" Mask [%s] ", buf); 
+        Debug(" Mask [%s] ", buf);
         vns_if.mask = asci_to_nboip(buf);
 
         /* -- read interface hw address into buf -- */
@@ -114,10 +114,10 @@ int sr_cpu_init_hardware(struct sr_instance* sr, const char* hwfile)
             fprintf(stderr, "Bad formatting in cpu hardware file\n");
             return 1;
         }
-        Debug(" MAC [%s]\n", buf); 
+        Debug(" MAC [%s]\n", buf);
         asci_to_ether(buf, vns_if.addr);
 
-        sr_integ_add_interface(sr, &vns_if); 
+        sr_integ_add_interface(sr, &vns_if);
 
     } /* -- while ( fgets ( .. ) ) -- */
     Debug(" < --                         -- >\n");
@@ -128,9 +128,9 @@ int sr_cpu_init_hardware(struct sr_instance* sr, const char* hwfile)
 } /* -- sr_cpu_init_hardware -- */
 
 /*-----------------------------------------------------------------------------
- * Method: sr_cpu_input(..) 
- * Scope: Local 
- * 
+ * Method: sr_cpu_input(..)
+ * Scope: Local
+ *
  *---------------------------------------------------------------------------*/
 
 int sr_cpu_input(struct sr_instance* sr)
@@ -140,7 +140,7 @@ int sr_cpu_input(struct sr_instance* sr)
 
     fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
     fprintf(stderr, "!!!  sr_cpu_input(..) (sr_cpu_extension_nf2.c) called while running in cpu mode     !!!\n");
-    fprintf(stderr, "!!!  you need to implement this function to read from the hardware                  !!!\n");           
+    fprintf(stderr, "!!!  you need to implement this function to read from the hardware                  !!!\n");
     fprintf(stderr, "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n");
 
     assert(0);
@@ -151,15 +151,15 @@ int sr_cpu_input(struct sr_instance* sr)
      *
      *  sr_integ_input(sr,
      *          packet,   * lent *
-     *          len, 
+     *          len,
      *          "eth2" ); * lent *
      */
-    
+
     /*
-     * Note: To log incoming packets, use sr_log_packet from sr_dumper.[c,h] 
+     * Note: To log incoming packets, use sr_log_packet from sr_dumper.[c,h]
      */
 
-    /* RETURN 1 on success, 0 on failure. 
+    /* RETURN 1 on success, 0 on failure.
      * Note: With a 0 result, the router will shut-down
      */
     return 1;
@@ -167,14 +167,14 @@ int sr_cpu_input(struct sr_instance* sr)
 } /* -- sr_cpu_input -- */
 
 /*-----------------------------------------------------------------------------
- * Method: sr_cpu_output(..) 
- * Scope: Global 
+ * Method: sr_cpu_output(..)
+ * Scope: Global
  *
  *---------------------------------------------------------------------------*/
 
-int sr_cpu_output(struct sr_instance* sr /* borrowed */, 
+int sr_cpu_output(struct sr_instance* sr /* borrowed */,
                        uint8_t* buf /* borrowed */ ,
-                       unsigned int len, 
+                       unsigned int len,
                        const char* iface /* borrowed */)
 {
     /* REQUIRES */
@@ -195,8 +195,8 @@ int sr_cpu_output(struct sr_instance* sr /* borrowed */,
 
 
 /*-----------------------------------------------------------------------------
- * Method: copy_next_field(..) 
- * Scope: Local 
+ * Method: copy_next_field(..)
+ * Scope: Local
  *
  *---------------------------------------------------------------------------*/
 
@@ -207,7 +207,7 @@ char* copy_next_field(FILE* fp, char* line, char* buf)
     while ( *line  && isspace((int)*line)) /* -- XXX: potential overrun here */
     { line++; }
     if(! *line )
-    { return 0; } 
+    { return 0; }
     while ( *line && ! isspace((int)*line) && ((tmpptr - buf) < SR_NAMELEN))
     { *tmpptr++ = *line++; }
     *tmpptr = 0;
@@ -215,8 +215,8 @@ char* copy_next_field(FILE* fp, char* line, char* buf)
 } /* -- copy_next_field -- */
 
 /*-----------------------------------------------------------------------------
- * Method: asci_to_nboip(..) 
- * Scope: Local 
+ * Method: asci_to_nboip(..)
+ * Scope: Local
  *
  *---------------------------------------------------------------------------*/
 
@@ -231,11 +231,11 @@ static uint32_t asci_to_nboip(const char* ip)
 } /* -- asci_to_nboip -- */
 
 /*-----------------------------------------------------------------------------
- * Method: asci_to_ether(..) 
- * Scope: Local 
+ * Method: asci_to_ether(..)
+ * Scope: Local
  *
  * Look away .. please ... just look away
- * 
+ *
  *---------------------------------------------------------------------------*/
 
 static void asci_to_ether(const char* addr, uint8_t mac[6])
@@ -246,7 +246,7 @@ static void asci_to_ether(const char* addr, uint8_t mac[6])
     for( i = 0; i < 6; ++i )
     {
         if (i)
-        { 
+        {
             while (*buf && *buf != ':')
             { buf++; }
             buf++;

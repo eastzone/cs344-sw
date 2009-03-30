@@ -1,13 +1,13 @@
 /*-----------------------------------------------------------------------------
- * file:   getarg.c 
- * date:   Tue Mar 30 14:24:27 PST 2004 
+ * file:   getarg.c
+ * date:   Tue Mar 30 14:24:27 PST 2004
  * Author: Martin Casado
  *
  * Description:
  *
- * Extremely dopy method of extracting command line args by modifying 
+ * Extremely dopy method of extracting command line args by modifying
  * argc and argv. Intended for use by libraries that require command line
- * args (using getopt(..) is a bit inflexible for such things). 
+ * args (using getopt(..) is a bit inflexible for such things).
  *
  *---------------------------------------------------------------------------*/
 
@@ -28,7 +28,7 @@ int getarg(int* argc, char*** argv, char* arg, char** val)
         { /* -- match -- */
 
             /* -- if last arg or next arg is a '-' assume no value.
-             *    Remove arg and return                            -- */ 
+             *    Remove arg and return                            -- */
             if ( i == (*argc) - 1 ||
                  (*argv)[i+1][0] == '-')
             {
@@ -67,7 +67,7 @@ int main(int argc, char** argv)
     if ( ! getarg(&argc, &argv, "-h", &expval) )
     { assert(0); }
     if ( expval )
-    { assert(0); } 
+    { assert(0); }
 
     for ( i = 0; i < argc; ++ i )
     { printf("[%s]",argv[i]); }
