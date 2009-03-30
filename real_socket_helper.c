@@ -1,16 +1,18 @@
-/* Filename: socket_wrapper.c */
+/* Filename: real_socket_wrapper.c */
 
+#include <assert.h>
 #include <errno.h>            /* errno */
+#include <stdarg.h>
 #include <stdio.h>            /* vsnprintf */
-#include <string.h>           /* strlen */
-#include "helper.h"           /* true_or_die */
-#include "socket_helper.h"
+#include <stdlib.h>           /* malloc, realloc */
+#include <string.h>           /* memset, strlen */
+#include "real_socket_helper.h"
 
-ssize_t read_once( int fd, void* buf, unsigned n ) {
+ssize_t real_read_once( int fd, void* buf, unsigned n ) {
     ssize_t nread;
     char* chbuf;
 
-    true_or_die( fd >= 0, "Bad fd %d in read_once", fd );
+    assert( fd >= 0 && "Bad fd in read_once" );
 
     /* loop until 1 or more bytes have been read from fd, or an EOF or error occurs */
     chbuf = (char*)buf;
@@ -28,12 +30,12 @@ ssize_t read_once( int fd, void* buf, unsigned n ) {
     }
 }
 
-ssize_t readn( int fd, void* buf, unsigned n ) {
+ssize_t real_readn( int fd, void* buf, unsigned n ) {
     size_t nleft;
     ssize_t nread;
     char* chbuf;
 
-    true_or_die( fd >= 0, "Bad fd %d in readn", fd );
+    assert( fd >= 0 && "Bad fd in readn" );
 
     /* loop until n bytes have been read from fd, or an EOF or error occurs */
     chbuf = (char*)buf;
@@ -55,10 +57,7 @@ ssize_t readn( int fd, void* buf, unsigned n ) {
     return (n - nleft);
 }
 
-/* forward decl */
-int real_read_search( int fd, const char* needle, search_state_t* state, int max_reads );
-
-int read_search( int fd, const char* needle, search_state_t* state, int max_reads ) {
+int real_read_search( int fd, const char* needle, search_state_t* state, int max_reads ) {
     int first_loop;
     int found_needle;
     int needle_len;
@@ -67,8 +66,7 @@ int read_search( int fd, const char* needle, search_state_t* state, int max_read
     size_t amount;
     int j;
 
-    if( fd < 0 )
-        return real_read_search( -fd, needle, state, max_reads );
+    assert( fd >= 0 && "Bad fd in read_search" );
 
     first_loop = 1;
     found_needle = 0;
@@ -126,16 +124,12 @@ int read_search( int fd, const char* needle, search_state_t* state, int max_read
     return 0; /* success */
 }
 
-/* forward declaration */
-int real_writen( int fd, const void* buf, unsigned n );
-
-int writen( int fd, const void* buf, unsigned n ) {
+int real_writen( int fd, const void* buf, unsigned n ) {
     size_t nleft;
     ssize_t nwritten;
     char* chbuf;
 
-    if( fd < 0 )
-        return real_writen( -fd, buf, n );
+    assert( fd >= 0 && "Bad fd in writen" );
 
     /* loop until n bytes have been written into fd, or an error occurs */
     chbuf = (char*)buf;
@@ -155,7 +149,7 @@ int writen( int fd, const void* buf, unsigned n ) {
     return 0; /* indicates success */
 }
 
-int writenf( int fd, const char* format, ... ) {
+int real_writenf( int fd, const char* format, ... ) {
     int actual;
     char buf[WRITEN_MAX_LEN];
 
@@ -170,14 +164,14 @@ int writenf( int fd, const char* format, ... ) {
 #endif
 
     if( actual < WRITEN_MAX_LEN )
-        return writen( fd, &buf, actual ); /* doesn't incl. the trailing NUL */
+        return real_writen( fd, &buf, actual ); /* doesn't incl. the trailing NUL */
     else {
         errno = ERANGE;
         return -1;
     }
 }
 
-int writenstr( int fd, const char* str ) {
+int real_writenstr( int fd, const char* str ) {
     unsigned len;
 
 #ifdef _PRINT_TO_STDERR_NOT_SOCKET_
@@ -186,10 +180,10 @@ int writenstr( int fd, const char* str ) {
 #endif
 
     len = strlen( str );
-    return writen( fd, str, len );
+    return real_writen( fd, str, len );
 }
 
-int writenstrs( int fd, int num_args, ... ) {
+int real_writenstrs( int fd, int num_args, ... ) {
     const char* str;
     int ret;
     va_list args;
@@ -198,9 +192,13 @@ int writenstrs( int fd, int num_args, ... ) {
     ret = 0;
     while( ret==0 && num_args-- > 0 ) {
         str = va_arg(args, const char*);
-        ret = writenstr( fd, str );
+        ret = real_writenstr( fd, str );
     }
 
     va_end( args );
     return ret;
+}
+
+void real_close( int fd ) {
+    close( fd );
 }
