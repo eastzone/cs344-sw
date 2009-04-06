@@ -17,7 +17,9 @@ RTABLE = 'rtable'
 
 # server info
 SERVER_ADDR = 'vns-1.stanford.edu'
-SERVER_PORT = 25039
+SERVER_PORT_FOR_OFF_CAMPUS_USERS = 25039
+SERVER_PORT_FOR_ON_CAMPUS_USERS = 25040
+SERVER_PORT = SERVER_PORT_FOR_ON_CAMPUS_USERS
 
 def main(argv=sys.argv[1:]):
     usage = """usage: %prog [options]
