@@ -13,7 +13,8 @@
 #define _NF2UTIL_H	1
 
 #define PATHLEN		80
-#define DEVICE_STR_LEN 120
+#define DEVICE_STR_NUM_REGS 25
+#define DEVICE_STR_LEN ((DEVICE_STR_NUM_REGS * 4)+1) /* extra byte for \0 */
 #define DEFAULT_IFACE "nf2c0"
 
 /** Encapsulates version info about a NetFPGA. */

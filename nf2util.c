@@ -356,13 +356,13 @@ void read_info( struct nf2device *nf2  )
   int i;
 
   // Read the version and revision
-  readReg(nf2, DEVICE_ID_REG, &nf2->info.nf2_device_id);
-  readReg(nf2, DEVICE_REVISION_REG, &nf2->info.nf2_revision);
+  readReg(nf2, DEV_ID_DEVICE_ID, &nf2->info.nf2_device_id);
+  readReg(nf2, DEV_ID_REVISION, &nf2->info.nf2_revision);
 
   // Read the version string
-  for (i = 0; i < (DEVICE_STR_LEN / 4) - 2; i++)
+  for (i = 0; i < DEVICE_STR_NUM_REGS; i++)
   {
-    readReg(nf2, DEVICE_STR_REG + i * 4, (unsigned *)(nf2->info.nf2_device_str + i * 4));
+    readReg(nf2, DEV_ID_DEV_STR_0 + i * 4, (unsigned *)(nf2->info.nf2_device_str + i * 4));
 
     // Perform byte swapping if necessary
     *(unsigned *)(nf2->info.nf2_device_str + i * 4) = ntohl(*(unsigned *)(nf2->info.nf2_device_str + i * 4));
