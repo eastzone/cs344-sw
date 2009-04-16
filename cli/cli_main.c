@@ -20,6 +20,9 @@
 
 #define CLI_ERR_MSG "Warning: terminating client"
 
+/* forward decl */
+void real_close( int fd );
+
 #ifdef _STANDALONE_CLI_
 #   define THREAD_RETURN_NIL return NULL
 #   define THREAD_RETURN_TYPE void*
@@ -39,8 +42,11 @@ static pthread_mutex_t parser_lock;
 /** Cleans up client_to_free and returns the next client */
 void cli_client_cleanup( cli_client_t* client_to_free ) {
     /* initial cleanup */
-    true_or_die( client_to_free->fd > 0, "bad fd %d in cli_client_cleanup", client_to_free->fd );
-    close( client_to_free->fd );
+    if(client_to_free->fd < 0)
+        real_close(-client_to_free->fd);
+    else
+        close(client_to_free->fd);
+
     search_state_destroy( &client_to_free->state );
 }
 
