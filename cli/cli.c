@@ -194,27 +194,19 @@ void cli_show_hw() {
 }
 
 void cli_show_hw_about() {
-    char buf[STR_ARP_CACHE_MAX_LEN];
-    router_hw_info_to_string( SR, buf, STR_HW_INFO_MAX_LEN );
-    cli_send_str( buf );
+    cli_send_str( "not yet implemented: cli_show_hw_about()\n" );
 }
 
 void cli_show_hw_arp() {
-    char buf[STR_ARP_CACHE_MAX_LEN];
-    arp_cache_hw_to_string( SR, *pverbose, buf, STR_ARP_CACHE_MAX_LEN );
-    cli_send_str( buf );
+    cli_send_str( "not yet implemented: cli_show_hw_arp()\n" );
 }
 
 void cli_show_hw_intf() {
-    char buf[STR_INTFS_HW_MAX_LEN];
-    router_intf_hw_to_string( SR, buf, STR_INTFS_HW_MAX_LEN );
-    cli_send_str( buf );
+    cli_send_str( "not yet implemented: cli_show_hw_intf()\n" );
 }
 
 void cli_show_hw_route() {
-    char buf[STR_RTABLE_MAX_LEN];
-    rtable_hw_to_string( SR, *pverbose, buf, STR_RTABLE_MAX_LEN );
-    cli_send_str( buf );
+    cli_send_str( "not yet implemented: cli_show_hw_route()\n" );
 }
 #endif
 
