@@ -161,10 +161,8 @@ static int copy_yytext( int is_quoted ) {
         return 0;
     }
 
-    if( is_quoted ) {
+    if( is_quoted )
         start = 1;
-        len -= 2;
-    }
     else
         start = 0;
 
