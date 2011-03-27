@@ -199,14 +199,12 @@ int sr_init_low_level_subystem(int argc, char **argv)
 
     Debug("\n");
 #ifdef _CPUMODE_
-    Debug("< -- Starting sr in NetFPGA (CPU) mode -- >");
+    Debug(" < -- Starting sr in cpu mode -- >\n");
+    Debug(" \n ");
 #else
-# ifdef _MANUAL_MODE_
-    Debug("< -- Starting sr in Manual router mode -- >");
-# else
-    Debug("< -- Starting sr in VNS router mode  -- >");
-# endif
-#endif
+    Debug(" < -- Starting sr in router mode  -- >\n");
+    Debug(" \n ");
+#endif /* _CPUMODE_ */
     Debug("\n\n");
 
     /* -- required by lwip, must be called from the main thread -- */
@@ -227,15 +225,9 @@ int sr_init_low_level_subystem(int argc, char **argv)
     sr->hw_init = 1;
     sr_integ_hw_setup(sr);
 #else
-# ifdef _MANUAL_MODE_
-    sr->topo_id = 0;
-    strncpy( sr->vhost, "manual", SR_NAMELEN );
-    strncpy( sr->server, "manual mode (no server)", SR_NAMELEN );
-# else
     sr->topo_id = topo;
     strncpy(sr->vhost,  host,    SR_NAMELEN);
     strncpy( sr->server, server, SR_NAMELEN );
-# endif
 #endif
 
     if(! user )
@@ -257,13 +249,6 @@ int sr_init_low_level_subystem(int argc, char **argv)
 
 
 #ifndef _CPUMODE_
-# ifdef _MANUAL_MODE_
-    /* create interfaces for the router */
-    sr_read_intf_from_file( sr->interface_subsystem, itable );
-    sr->hw_init = 1;
-    sr_integ_hw_setup(sr);
-    sr_manual_init( sr );
-# else /* VNS mode */
     Debug("Client %s connecting to Server %s:%d\n",
             sr->user, server, port);
     Debug("Requesting topology %d\n", topo);
@@ -282,11 +267,10 @@ int sr_init_low_level_subystem(int argc, char **argv)
         }
     }
     Debug("Hardware retrieved from VNS server\n");
-# endif
 #endif
 
     /* -- start low-level network thread -- */
-    sys_thread_new(sr_low_level_network_subsystem, NULL);
+    sys_thread_new(sr_low_level_network_subsystem, (void*)sr);
 
     return 0;
 }/* -- main -- */
@@ -336,23 +320,25 @@ struct sr_instance* sr_get_global_instance(struct sr_instance* sr)
     return sr_global_instance;
 }
 
-static void sr_low_level_network_subsystem(void *arg) {
-    struct sr_instance* sr = sr_get_global_instance(NULL);
+static void sr_low_level_network_subsystem(void *arg)
+{
+    struct sr_instance* sr = (struct sr_instance*)arg;
 
-    /* choose the method for reading/processing packets */
+    /* -- set argument as global singleton -- */
+    sr_get_global_instance(sr);
+
+
 #ifdef _CPUMODE_
-#    define SR_LOW_LEVEL_READ_METHOD sr_cpu_input(sr)
+    /* -- whizbang main loop ;-) */
+    while( sr_cpu_input(sr) == 1);
 #else
-# ifdef _MANUAL_MODE_
-#    define SR_LOW_LEVEL_READ_METHOD sr_manual_read_packet(sr)
-# else
-#    define SR_LOW_LEVEL_READ_METHOD sr_vns_read_from_server(sr)
-# endif
+    /* -- whizbang main loop ;-) */
+    while( sr_vns_read_from_server(sr) == 1);
 #endif
 
-    /* cleanup */
+   /* -- this is the end ... my only friend .. the end -- */
     sr_destroy_instance(sr);
-}
+} /* --  sr_low_level_network_subsystem -- */
 
 /*-----------------------------------------------------------------------------
  * Method: sr_lwip_transport_startup(..)

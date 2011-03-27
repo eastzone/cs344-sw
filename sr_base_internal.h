@@ -39,26 +39,18 @@
 
 #define CPU_HW_FILENAME "cpuhw"
 
-#ifndef _MANUAL_MODE_
-int main(int argc, char** argv);
-#else
-int original_main(int argc, char** argv);
-#endif
-
 /* -- gcc specific vararg macro support ... but its so nice! -- */
 #ifdef _DEBUG_
-#define Debug(x, args...) fprintf(stderr,x, ## args)
+#define Debug(x, args...) printf(x, ## args)
 #define DebugIP(x) \
-  do { struct in_addr addr; addr.s_addr = x; fprintf(stderr,"%s",inet_ntoa(addr));\
+  do { struct in_addr addr; addr.s_addr = x; printf("%s",inet_ntoa(addr));\
      } while(0)
 #define DebugMAC(x) \
-  do { int ivyl; for(ivyl=0; ivyl<5; ivyl++) fprintf(stderr,"%02x:", \
-  (unsigned char)(x[ivyl])); fprintf(stderr,"%02x",(unsigned char)(x[5])); } while (0)
+  do { int ivyl; for(ivyl=0; ivyl<5; ivyl++) printf("%02x:", \
+  (unsigned char)(x[ivyl])); printf("%02x",(unsigned char)(x[5])); } while (0)
 #else
 #define Debug(x, args...) do{}while(0)
-#define DebugMAC(x) \
-  do { int ivyl; for(ivyl=0; ivyl<5; ivyl++) fprintf(stderr,"%02x:", \
-  (unsigned char)(x[ivyl])); fprintf(stderr,"%02x",(unsigned char)(x[5])); } while (0)
+#define DebugMAC(x) do{}while(0)
 #endif
 
 /* ----------------------------------------------------------------------------
