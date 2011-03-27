@@ -1,5 +1,5 @@
 /* ****************************************************************************
- * $Id: nf2util.c 3546 2008-04-03 00:12:27Z grg $
+ * $Id: nf2util.c 6008 2010-03-14 08:17:15Z grg $
  *
  * Module: nf2util.c
  * Project: NetFPGA 2 Linux Kernel Driver
@@ -33,7 +33,7 @@ static int readRegNet(struct nf2device *nf2, unsigned reg, unsigned *val);
 static int readRegFile(struct nf2device *nf2, unsigned reg, unsigned *val);
 static int writeRegNet(struct nf2device *nf2, unsigned reg, unsigned val);
 static int writeRegFile(struct nf2device *nf2, unsigned reg, unsigned val);
-static void read_info(struct nf2device *nf2);
+static void readStr(struct nf2device *nf2, unsigned regStart, unsigned len, char *dst);
 
 /*
  * readReg - read a register
@@ -78,7 +78,7 @@ static int readRegNet(struct nf2device *nf2, unsigned reg, unsigned *val)
 	}
 	else
 	{
-                perror("sendpacket: ioctl failed in readRegNet");
+                perror("sendpacket: ioctl failed");
                 return -1;
 	}
 }
@@ -88,6 +88,7 @@ static int readRegNet(struct nf2device *nf2, unsigned reg, unsigned *val)
  */
 static int readRegFile(struct nf2device *nf2, unsigned reg, unsigned *val)
 {
+        struct ifreq ifreq;
 	struct nf2reg nf2reg;
 	int ret;
 
@@ -101,7 +102,7 @@ static int readRegFile(struct nf2device *nf2, unsigned reg, unsigned *val)
 	}
 	else
 	{
-                perror("sendpacket: ioctl failed in readRegFile");
+                perror("sendpacket: ioctl failed");
                 return -1;
 	}
 }
@@ -151,7 +152,7 @@ static int writeRegNet(struct nf2device *nf2, unsigned reg, unsigned val)
 	}
 	else
 	{
-                perror("sendpacket: ioctl failed in writeRegNet");
+                perror("sendpacket: ioctl failed");
                 return -1;
 	}
 }
@@ -162,6 +163,7 @@ static int writeRegNet(struct nf2device *nf2, unsigned reg, unsigned val)
  */
 static int writeRegFile(struct nf2device *nf2, unsigned reg, unsigned val)
 {
+        struct ifreq ifreq;
 	struct nf2reg nf2reg;
 	int ret;
 
@@ -175,7 +177,7 @@ static int writeRegFile(struct nf2device *nf2, unsigned reg, unsigned val)
 	}
 	else
 	{
-                perror("sendpacket: ioctl failed in writeRegFile");
+                perror("sendpacket: ioctl failed");
                 return -1;
 	}
 }
@@ -202,9 +204,7 @@ int check_iface(struct nf2device *nf2)
 	strcat(filename, nf2->device_name);
 	if (stat(filename, &buf) == 0)
 	{
-#ifdef _DEBUG_
 		fprintf(stderr, "Found net device: %s\n", nf2->device_name);
-#endif
 		nf2->net_iface = 1;
 		return 0;
 	}
@@ -214,9 +214,7 @@ int check_iface(struct nf2device *nf2)
 	strcat(filename, nf2->device_name);
 	if (stat(filename, &buf) == 0)
 	{
-#ifdef _DEBUG_
 		fprintf(stderr, "Found dev device: %s\n", nf2->device_name);
-#endif
 		nf2->net_iface = 0;
 		return 0;
 	}
@@ -260,65 +258,13 @@ int openDescriptor(struct nf2device *nf2)
 				}
 
 			}
-			else
-			{
-				/* Attempt to find the IP address for the interface */
-				for (i = 1; ; i++)
-				{
-					/* Find interface number i*/
-					ifreq.ifr_ifindex = i;
-					if (ioctl (nf2->fd, SIOCGIFNAME, &ifreq) < 0)
-						break;
-
-					/* Check if we've found the correct interface */
-					if (strcmp(ifreq.ifr_name, nf2->device_name) != 0)
-						continue;
-
-					/* If we get to here we've found the IP */
-					found = 1;
-					break;
-				}
-
-				/* Verify that we found the interface */
-				if (!found)
-				{
-					fprintf(stderr, "Can't find device: %s\n", nf2->device_name);
-					return -1;
-				}
-
-				/* Attempt to get the IP address associated with the interface */
-				if (ioctl (nf2->fd, SIOCGIFADDR, &ifreq) < 0)
-				{
-					perror("ioctl: calling SIOCGIFADDR");
-
-					fprintf(stderr, "Unable to find IP address for device: %s\n", nf2->device_name);
-					fprintf(stderr, "Either run this program as root or ask an administrator\n");
-					fprintf(stderr, "to assign an IP address to the device\n");
-					return -1;
-				}
-
-				/* Set the addres and attempt to bind to the socket */
-				address.sin_family = AF_INET;
-				address.sin_addr.s_addr = sin->sin_addr.s_addr;
-				address.sin_port = htons(0);
-				if (bind(nf2->fd,(struct sockaddr *)&address,sizeof(address)) == -1) {
-					perror("bind: binding");
-					return -1;
-				}
-			}
 		}
 	}
 	else
 	{
 		strcpy(filename, "/dev/");
 		strcat(filename, nf2->device_name);
-		FILE* file = fopen(filename, "w+");
-		if( !file ) {
-		  perror( "fopen failed" );
-		  return -1;
-		}
-
-		nf2->fd = fileno( file );
+		nf2->fd = fileno(fopen(filename, "w+"));
 		if (nf2->fd == -1)
 		{
                 	perror("fileno: creating descriptor");
@@ -326,7 +272,6 @@ int openDescriptor(struct nf2device *nf2)
 		}
 	}
 
-          read_info( nf2 );
 	return 0;
 }
 
@@ -335,6 +280,9 @@ int openDescriptor(struct nf2device *nf2)
  */
 int closeDescriptor(struct nf2device *nf2)
 {
+        struct ifreq ifreq;
+	char filename[PATHLEN];
+
 	if (nf2->net_iface)
 	{
 		close(nf2->fd);
@@ -347,25 +295,3 @@ int closeDescriptor(struct nf2device *nf2)
 	return 0;
 }
 
-
-/*
- *  Read the version info from the board
- */
-void read_info( struct nf2device *nf2  )
-{
-  int i;
-
-  // Read the version and revision
-  readReg(nf2, DEV_ID_DEVICE_ID, &nf2->info.nf2_device_id);
-  readReg(nf2, DEV_ID_REVISION, &nf2->info.nf2_revision);
-
-  // Read the version string
-  for (i = 0; i < DEVICE_STR_NUM_REGS; i++)
-  {
-    readReg(nf2, DEV_ID_DEV_STR_0 + i * 4, (unsigned *)(nf2->info.nf2_device_str + i * 4));
-
-    // Perform byte swapping if necessary
-    *(unsigned *)(nf2->info.nf2_device_str + i * 4) = ntohl(*(unsigned *)(nf2->info.nf2_device_str + i * 4));
-  }
-  nf2->info.nf2_device_str[DEVICE_STR_LEN - 1] = '\0';
-}

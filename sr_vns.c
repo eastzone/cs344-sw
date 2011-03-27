@@ -23,13 +23,13 @@
 #include <arpa/inet.h>
 #include <sys/time.h>
 
+#include "sha1.h"
 #include "sr_vns.h"
 #include "sr_dumper.h"
 
 #include "sr_base_internal.h"
 
 #include "vnscommand.h"
-
 
 /*-----------------------------------------------------------------------------
  * Method: sr_vns_init_log(..)
@@ -49,6 +49,8 @@ void sr_vns_init_log(struct sr_instance* sr, char* logfile)
         exit(1);
     }
 } /* -- sr_init_log -- */
+
+#ifndef _CPUMODE_
 
 /*-----------------------------------------------------------------------------
  * Method: sr_close_instance(..)
@@ -102,6 +104,9 @@ int sr_vns_connect_to_server(struct sr_instance* sr,unsigned short port,
 {
     struct hostent *hp;
     c_open command;
+    c_open_template ot;
+    char* buf;
+    uint32_t buf_len;
 
     /* REQUIRES */
     assert(sr);
@@ -145,18 +150,45 @@ int sr_vns_connect_to_server(struct sr_instance* sr,unsigned short port,
         return -1;
     }
 
-    /* send sr_OPEN message to server */
-    command.mLen   = htonl(sizeof(c_open));
-    command.mType  = htonl(VNSOPEN);
-    command.topoID = htons(sr->topo_id);
-    strncpy( command.mVirtualHostID, sr->vhost,  IDSIZE);
-    strncpy( command.mUID, sr->user, IDSIZE);
+    fprintf(stderr, "waiting for expected messages ...\n");
+    /* wait for authentication to be completed (server sends the first message) */
+    if(sr_read_from_server_expect(sr, VNS_AUTH_REQUEST)!= 1 ||
+       sr_read_from_server_expect(sr, VNS_AUTH_STATUS) != 1)
+        return -1; /* failed to receive expected message */
+    fprintf(stderr, "got expected messages ...\n");
 
-    if (send(sr->sockfd, (void *)&command, sizeof(c_open), 0) != sizeof(c_open))
+    if(strlen(sr->template) > 0) {
+        /* send VNS_OPEN_TEMPLATE message to server */
+        ot.mLen = htonl(sizeof(c_open_template));
+        ot.mType = htonl(VNS_OPEN_TEMPLATE);
+        strncpy(ot.templateName, sr->template, 30);
+        strncpy(ot.mVirtualHostID, sr->vhost, IDSIZE);
+        /* no source filters specified */
+
+        buf = (char*)&ot;
+        buf_len = sizeof(ot);
+    }
+    else {
+        /* send sr_OPEN message to server */
+        command.mLen   = htonl(sizeof(c_open));
+        command.mType  = htonl(VNSOPEN);
+        command.topoID = htons(sr->topo_id);
+        strncpy( command.mVirtualHostID, sr->vhost,  IDSIZE);
+        strncpy( command.mUID, sr->user, IDSIZE);
+
+        buf = (char*)&command;
+        buf_len = sizeof(command);
+    }
+
+    if(send(sr->sockfd, buf, buf_len, 0) != buf_len)
     {
         perror("send(..):sr_client.c::sr_connect_to_server()");
         return -1;
     }
+
+    if(strlen(sr->template) > 0)
+        if(sr_read_from_server_expect(sr, VNS_RTABLE) != 1)
+            return -1; /* needed to get the rtable */
 
     return 0;
 } /* -- sr_connect_to_server -- */
@@ -181,7 +213,7 @@ int sr_handle_hwinfo(struct sr_instance* sr, c_hwinfo* hwinfo)
     assert(hwinfo);
 
     num_entries = (ntohl(hwinfo->mLen) - (2*sizeof(uint32_t)))/sizeof(c_hw_entry);
-    Debug("Received Hardware Info with %d entries\n",num_entries);
+    fprintf(stderr,"Received Hardware Info with %d entries\n",num_entries);
 
     vns_if.name[0] = 0;
 
@@ -190,39 +222,39 @@ int sr_handle_hwinfo(struct sr_instance* sr, c_hwinfo* hwinfo)
         switch( ntohl(hwinfo->mHWInfo[i].mKey))
         {
             case HWFIXEDIP:
-                Debug("Fixed IP: %s\n",inet_ntoa(
+                fprintf(stderr,"Fixed IP: %s\n",inet_ntoa(
                             *((struct in_addr*)(hwinfo->mHWInfo[i].value))));
                 break;
             case HWINTERFACE:
-                Debug("Interface: %s\n",hwinfo->mHWInfo[i].value);
+                fprintf(stderr,"Interface: %s\n",hwinfo->mHWInfo[i].value);
                 if (vns_if.name[0])
                 { sr_integ_add_interface(sr, &vns_if); vns_if.name[0] = 0; }
                 strncpy(vns_if.name, hwinfo->mHWInfo[i].value, SR_NAMELEN);
                 break;
             case HWSPEED:
-                Debug("Speed: %d\n",
+                fprintf(stderr,"Speed: %d\n",
                         ntohl(*((unsigned int*)hwinfo->mHWInfo[i].value)));
                 vns_if.speed =
                     ntohl(*((unsigned int*)hwinfo->mHWInfo[i].value));
                 break;
             case HWSUBNET:
-                Debug("Subnet: %s\n",inet_ntoa(
+                fprintf(stderr,"Subnet: %s\n",inet_ntoa(
                             *((struct in_addr*)(hwinfo->mHWInfo[i].value))));
                 break;
             case HWMASK:
-                Debug("Mask: %s\n",inet_ntoa(
+                fprintf(stderr,"Mask: %s\n",inet_ntoa(
                             *((struct in_addr*)(hwinfo->mHWInfo[i].value))));
                 vns_if.mask = *((uint32_t*)hwinfo->mHWInfo[i].value);
                 break;
             case HWETHIP:
-                Debug("Ethernet IP: %s\n",inet_ntoa(
+                fprintf(stderr,"Ethernet IP: %s\n",inet_ntoa(
                             *((struct in_addr*)(hwinfo->mHWInfo[i].value))));
                 vns_if.ip = *((uint32_t*)hwinfo->mHWInfo[i].value);
                 break;
             case HWETHER:
-                Debug("Hardware Address: ");
+                fprintf(stderr,"Hardware Address: ");
                 DebugMAC(hwinfo->mHWInfo[i].value);
-                Debug("\n");
+                fprintf(stderr,"\n");
                 memcpy(vns_if.addr,
                         (unsigned char*)hwinfo->mHWInfo[i].value, 6);
                 break;
@@ -243,6 +275,74 @@ int sr_handle_hwinfo(struct sr_instance* sr, c_hwinfo* hwinfo)
     return num_entries;
 } /* -- sr_handle_hwinfo -- */
 
+int sr_handle_auth_request(struct sr_instance* sr, c_auth_request* req) {
+#define AUTH_KEY_LEN 64
+#define SHA1_LEN 20
+    char auth_key[AUTH_KEY_LEN+1];
+    FILE* fp;
+    SHA1Context sha1;
+    c_auth_reply* ar;
+    char* buf;
+    int len, len_username, i, ret;
+
+    /* read in the user's auth key */
+    fp = fopen(sr->auth_key_fn, "r");
+    if(fp) {
+        if(fgets(auth_key, AUTH_KEY_LEN+1, fp) != auth_key) {
+            fclose(fp);
+            return 0;
+        }
+        fclose(fp);
+
+        /* compute the salted SHA1 of password from auth_key */
+        SHA1Reset(&sha1);
+        SHA1Input(&sha1, req->salt, ntohl(req->mLen) - sizeof(*req));
+        SHA1Input(&sha1, (unsigned char*)auth_key, AUTH_KEY_LEN);
+        if(!SHA1Result(&sha1)) {
+            fprintf(stderr, "SHA1 result could not be computed\n");
+            return 0;
+        }
+
+        /* build the auth reply packet and then send it */
+        len_username = strlen(sr->user);
+        len = sizeof(c_auth_reply) + len_username + SHA1_LEN;
+        buf = (char*)malloc(len);
+        if(!buf) {
+            perror("malloc failed");
+            return 0;
+        }
+        ar = (c_auth_reply*)buf;
+        ar->mLen = htonl(len);
+        ar->mType = htonl(VNS_AUTH_REPLY);
+        ar->usernameLen = htonl(len_username);
+        strcpy(ar->username, sr->user);
+        for(i=0; i<5; i++)
+            sha1.Message_Digest[i] = htonl(sha1.Message_Digest[i]);
+        memcpy(ar->username + len_username, sha1.Message_Digest, SHA1_LEN);
+
+        if(send(sr->sockfd, buf, len, 0) != len) {
+            perror("send(..):sr_client.c::sr_handle_auth_request()");
+            ret = 0;
+        }
+        else
+            ret = 1;
+        free(buf);
+        return ret;
+    }
+    else {
+        perror("unable to read credentials from authentication key file");
+        return 0; /* failed */
+    }
+}
+
+int sr_handle_auth_status(struct sr_instance* sr, c_auth_status* status) {
+    if(status->auth_ok)
+        printf("successfully authenticated as %s\n", sr->user);
+    else
+        fprintf(stderr, "Authentication failed as %s: %s\n", sr->user, status->msg);
+    return status->auth_ok;
+}
+
 /*-----------------------------------------------------------------------------
  * Method: sr_vns_read_from_server(..)
  * Scope: global
@@ -252,6 +352,11 @@ int sr_handle_hwinfo(struct sr_instance* sr, c_hwinfo* hwinfo)
  *---------------------------------------------------------------------------*/
 
 int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
+{
+    return sr_read_from_server_expect(sr, 0);
+}/* -- sr_vns_read_from_server -- */
+
+int sr_read_from_server_expect(struct sr_instance* sr /* borrowed */, int expected_cmd)
 {
     int command, len;
     unsigned char *buf = 0;
@@ -279,11 +384,12 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
                 if ( errno == EINTR )
                 { continue; }
 
-                perror("recv(..):sr_client.c::sr_vns_read_from_server");
+                perror("recv(..):sr_client.c::sr_read_from_server");
                 return -1;
             }
             bytes_read += ret;
         } while ( errno == EINTR); /* be mindful of signals */
+
     }
 
     len = ntohl(len);
@@ -295,9 +401,9 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
         return -1;
     }
 
-    if((buf = (unsigned char*)malloc(len)) == 0)
+    if((buf = malloc(len)) == 0)
     {
-        fprintf(stderr,"Error: out of memory (sr_vns_read_from_server)\n");
+        fprintf(stderr,"Error: out of memory (sr_read_from_server)\n");
         return -1;
     }
 
@@ -329,6 +435,15 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
     /* ... you win - mc                                  */
     command = *(((int *)buf)+1) = ntohl(*(((int *)buf)+1));
 
+    /* make sure the command is what we expected if we were expecting something */
+    if(expected_cmd && command!=expected_cmd) {
+        if(command != VNSCLOSE) { /* VNSCLOSE is always ok */
+            fprintf(stderr, "Error: expected command %d but got %d\n", expected_cmd, command);
+            return -1;
+        }
+    }
+
+    ret = 1;
     switch (command)
     {
         /* -------------        VNSPACKET     -------------------- */
@@ -351,13 +466,19 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
             /* -------------        VNSCLOSE      -------------------- */
 
         case VNSCLOSE:
-            fprintf(stderr,"vns server closed session.\n");
+            fprintf(stderr,"VNS server closed session.\n");
             fprintf(stderr,"Reason: %s\n",((c_close*)buf)->mErrorMessage);
-            sr_close_instance(sr);
-            sr_integ_close(sr);
+            sr_close_instance(sr); /* closes the VNS socket and logfile */
+
             if(buf)
             { free(buf); }
             return 0;
+            break;
+
+            /* -------------        VNSBANNER      -------------------- */
+
+        case VNSBANNER:
+            fprintf(stderr,"%s",((c_banner*)buf)->mBannerMessage);
             break;
 
             /* -------------     VNSHWINFO     -------------------- */
@@ -366,15 +487,36 @@ int sr_vns_read_from_server(struct sr_instance* sr /* borrowed */)
             sr_handle_hwinfo(sr,(c_hwinfo*)buf);
             break;
 
-        default:
-            Debug("unknown command: %d\n", command);
+            /* ---------------- VNS_RTABLE ---------------- */
+        case VNS_RTABLE:
+            fprintf(stderr, "not yet setup to handle VNS_RTABLE message\n");
+            sr_close_instance(sr);
+            if(buf) { free(buf); }
+            return 0;
             break;
-    }
+
+            /* ------------- VNS_AUTH_REQUEST ------------- */
+        case VNS_AUTH_REQUEST:
+            if(!sr_handle_auth_request(sr, (c_auth_request*)buf))
+                ret = -1;
+            break;
+
+            /* ------------- VNS_AUTH_STATUS -------------- */
+        case VNS_AUTH_STATUS:
+            if(!sr_handle_auth_status(sr, (c_auth_status*)buf))
+                ret = -1;
+            break;
+
+        default:
+            printf("unknown command: %d\n", command);
+            break;
+
+    }/* -- switch -- */
 
     if(buf)
     { free(buf); }
-    return 1;
-}/* -- sr_vns_read_from_server -- */
+    return ret;
+}/* -- sr_read_from_server -- */
 
 /*-----------------------------------------------------------------------------
  * Method: sr_send_packet(..)
@@ -438,3 +580,4 @@ int sr_vns_send_packet(struct sr_instance* sr /* borrowed */,
     return 0;
 } /* -- sr_send_packet -- */
 
+#endif /* _CPUMODE_ */

@@ -51,12 +51,12 @@
 #include "lwip/transport_subsys.h"
 
 #include "sr_vns.h"
+#include "sr_base.h"
 #include "sr_base_internal.h"
 
 #ifdef _CPUMODE_
 #include "sr_cpu_extension_nf2.h"
 #endif
-
 
 extern char* optarg;
 
@@ -66,6 +66,45 @@ static void sr_set_user(struct sr_instance* sr);
 static void sr_init_instance(struct sr_instance* sr);
 static void sr_low_level_network_subsystem(void *arg);
 static void sr_destroy_instance(struct sr_instance* sr);
+
+/**
+ * Returns a logfile name which is in the format:
+ *   log/topo<topo>-<host>-<count>.log
+ *
+ * The <count> is obtained from the file log/.count (the number in the file is
+ * then incremented by one).
+ *
+ * @return logfile name (caller responsible for freeing it)
+ */
+static char* gen_logfile( unsigned topo, char* host ) {
+    FILE* fp;
+    char str_num[12];
+    unsigned num;
+    char* logfile;
+
+    /* read the current count */
+    fp = fopen( "log/.count", "r" );
+    if( ! fp )
+        die( "Error: could not open file log/.count for read-access" );
+
+    fgets( str_num, 12, fp );
+    sscanf( str_num, "%u", &num );
+    fclose( fp );
+
+    /* write the new count */
+    fp = fopen( "log/.count", "w" );
+    if( ! fp )
+        die( "Error: could not open file log/.count for write-access" );
+
+    fprintf( fp, "%u", num+1 );
+    fclose( fp );
+
+    /* create the logfile name */
+    logfile = malloc( 512 * sizeof(char) );
+    assert( logfile && "malloc failed" );
+    snprintf( logfile, 512, "log/topo%u-%s-%u.log", topo, host, num );
+    return logfile;
+}
 
 /*----------------------------------------------------------------------------
  * sr_init_low_level_subystem
@@ -83,14 +122,18 @@ static void sr_destroy_instance(struct sr_instance* sr);
 int sr_init_low_level_subystem(int argc, char **argv)
 {
     /* -- VNS default parameters -- */
+    char *auth_key_file = "auth_key";
     char  *host   = "vrhost";
+    char *user = 0;
     char  *rtable = "rtable";
-    char  *server = "171.67.71.18";
-    uint16_t port =  12345;
+    char  *itable = CPU_HW_FILENAME;
+    char  *server = "171.67.71.19";
+    uint16_t port =  3250;
     uint16_t topo =  0;
+    int ospf = 0;
 
-    char  *client = 0;
     char  *logfile = 0;
+    int free_logfile = 0;
 
     /* -- singleton instance of router, passed to sr_get_global_instance
           to become globally accessible                                  -- */
@@ -107,7 +150,7 @@ int sr_init_low_level_subystem(int argc, char **argv)
 
     sr = (struct sr_instance*) malloc(sizeof(struct sr_instance));
 
-    while ((c = getopt(argc, argv, "hs:v:p:c:t:r:l:")) != EOF)
+    while ((c = getopt(argc, argv, "hna:s:v:p:t:r:l:i:u:")) != EOF)
     {
         switch (c)
         {
@@ -121,57 +164,84 @@ int sr_init_low_level_subystem(int argc, char **argv)
             case 't':
                 topo = atoi((char *) optarg);
                 break;
+            case 'a':
+                auth_key_file = optarg;
+                break;
             case 'v':
                 host = optarg;
                 break;
+            case 'u':
+                user = optarg;
+                break;
             case 'r':
                 rtable = optarg;
-                break;
-            case 'c':
-                client = optarg;
                 break;
             case 's':
                 server = optarg;
                 break;
             case 'l':
                 logfile = optarg;
+                if( strcmp( "auto", logfile )==0 ) {
+                    logfile = gen_logfile( topo, host );
+                    free_logfile = 1;
+                }
+                Debug("\nLOGGING to %s\n\n", logfile);
+                break;
+            case 'i':
+                itable = optarg;
+                break;
+            case 'n':
+                Debug("\nOSPF disabled!\n\n");
+                ospf = 0;
                 break;
         } /* switch */
     } /* -- while -- */
 
+    Debug("\n");
 #ifdef _CPUMODE_
-    Debug(" \n ");
-    Debug(" < -- Starting sr in cpu mode -- >\n");
-    Debug(" \n ");
+    Debug("< -- Starting sr in NetFPGA (CPU) mode -- >");
 #else
-    Debug(" < -- Starting sr in router mode  -- >\n");
-    Debug(" \n ");
-#endif /* _CPUMODE_ */
+# ifdef _MANUAL_MODE_
+    Debug("< -- Starting sr in Manual router mode -- >");
+# else
+    Debug("< -- Starting sr in VNS router mode  -- >");
+# endif
+#endif
+    Debug("\n\n");
 
     /* -- required by lwip, must be called from the main thread -- */
     sys_thread_init();
 
     /* -- zero out sr instance and set default configurations -- */
     sr_init_instance(sr);
+    sr->template[0] = '\0';
+    strncpy(sr->auth_key_fn,auth_key_file,64);
 
+    strncpy(sr->rtable, rtable, SR_NAMELEN);
 #ifdef _CPUMODE_
     sr->topo_id = 0;
     strncpy(sr->vhost,  "cpu",    SR_NAMELEN);
-    strncpy(sr->rtable, rtable, SR_NAMELEN);
+    strncpy( sr->server, "hw mode (no server)", SR_NAMELEN );
 
-    if ( sr_cpu_init_hardware(sr, CPU_HW_FILENAME) )
-    { exit(1); }
+    sr_read_intf_from_file( sr->interface_subsystem, itable );
+    sr->hw_init = 1;
     sr_integ_hw_setup(sr);
 #else
+# ifdef _MANUAL_MODE_
+    sr->topo_id = 0;
+    strncpy( sr->vhost, "manual", SR_NAMELEN );
+    strncpy( sr->server, "manual mode (no server)", SR_NAMELEN );
+# else
     sr->topo_id = topo;
     strncpy(sr->vhost,  host,    SR_NAMELEN);
-    strncpy(sr->rtable, rtable, SR_NAMELEN);
-#endif /* _CPUMODE_ */
+    strncpy( sr->server, server, SR_NAMELEN );
+# endif
+#endif
 
-    if(! client )
+    if(! user )
     { sr_set_user(sr); }
     else
-    { strncpy(sr->user, client,  SR_NAMELEN); }
+    { strncpy(sr->user, user,  SR_NAMELEN); }
 
     if ( gethostname(sr->lhost,  SR_NAMELEN) == -1 )
     {
@@ -181,11 +251,19 @@ int sr_init_low_level_subystem(int argc, char **argv)
 
     /* -- log all packets sent/received to logfile (if non-null) -- */
     sr_vns_init_log(sr, logfile);
+    if( free_logfile ) free( logfile );
 
     sr_lwip_transport_startup();
 
 
 #ifndef _CPUMODE_
+# ifdef _MANUAL_MODE_
+    /* create interfaces for the router */
+    sr_read_intf_from_file( sr->interface_subsystem, itable );
+    sr->hw_init = 1;
+    sr_integ_hw_setup(sr);
+    sr_manual_init( sr );
+# else /* VNS mode */
     Debug("Client %s connecting to Server %s:%d\n",
             sr->user, server, port);
     Debug("Requesting topology %d\n", topo);
@@ -199,15 +277,16 @@ int sr_init_low_level_subystem(int argc, char **argv)
     {
         if(sr_vns_read_from_server(sr) == -1 )
         {
-            fprintf(stderr, "Error: could not get hardware information from the server\n");
             sr_destroy_instance(sr);
-            return 1;
+            die( "Error: could not get hardware information from the VNS server" );
         }
     }
+    Debug("Hardware retrieved from VNS server\n");
+# endif
 #endif
 
-    /* -- start low-level network thread, dissown sr -- */
-    sys_thread_new(sr_low_level_network_subsystem, (void*)sr /* dissown */);
+    /* -- start low-level network thread -- */
+    sys_thread_new(sr_low_level_network_subsystem, NULL);
 
     return 0;
 }/* -- main -- */
@@ -255,32 +334,25 @@ struct sr_instance* sr_get_global_instance(struct sr_instance* sr)
     { sr_global_instance = sr; }
 
     return sr_global_instance;
-} /* -- sr_get_global_instance -- */
+}
 
-/*-----------------------------------------------------------------------------
- * Method: sr_low_level_network_subsystem(..)
- * Scope: local
- *---------------------------------------------------------------------------*/
+static void sr_low_level_network_subsystem(void *arg) {
+    struct sr_instance* sr = sr_get_global_instance(NULL);
 
-static void sr_low_level_network_subsystem(void *arg)
-{
-    struct sr_instance* sr = (struct sr_instance*)arg;
-
-    /* -- set argument as global singleton -- */
-    sr_get_global_instance(sr);
-
-
+    /* choose the method for reading/processing packets */
 #ifdef _CPUMODE_
-    /* -- whizbang main loop ;-) */
-    while( sr_cpu_input(sr) == 1);
+#    define SR_LOW_LEVEL_READ_METHOD sr_cpu_input(sr)
 #else
-    /* -- whizbang main loop ;-) */
-    while( sr_vns_read_from_server(sr) == 1);
+# ifdef _MANUAL_MODE_
+#    define SR_LOW_LEVEL_READ_METHOD sr_manual_read_packet(sr)
+# else
+#    define SR_LOW_LEVEL_READ_METHOD sr_vns_read_from_server(sr)
+# endif
 #endif
 
-   /* -- this is the end ... my only friend .. the end -- */
+    /* cleanup */
     sr_destroy_instance(sr);
-} /* --  sr_low_level_network_subsystem -- */
+}
 
 /*-----------------------------------------------------------------------------
  * Method: sr_lwip_transport_startup(..)
@@ -335,6 +407,9 @@ void sr_init_instance(struct sr_instance* sr)
     /* REQUIRES */
     assert(sr);
 
+    /* -- set argument as global singleton -- */
+    sr_get_global_instance(sr);
+
     sr->sockfd   = -1;
     sr->user[0]  = 0;
     sr->vhost[0] = 0;
@@ -355,13 +430,11 @@ void sr_init_instance(struct sr_instance* sr)
  *
  *----------------------------------------------------------------------------*/
 
-static void sr_destroy_instance(struct sr_instance* sr)
-{
-    /* REQUIRES */
+static void sr_destroy_instance(struct sr_instance* sr) {
     assert(sr);
-
     sr_integ_destroy(sr);
-} /* -- sr_destroy_instance -- */
+    free( sr );
+}
 
 /*-----------------------------------------------------------------------------
  * Method: usage(..)
@@ -372,5 +445,5 @@ static void usage(char* argv0)
 {
     printf("Simple Router Client\n");
     printf("Format: %s [-h] [-v host] [-s server] [-p port] \n",argv0);
-    printf("           [-t topo id] \n");
+    printf("           [-t topo id] [-r rtable_file] [-l log_file] [-i interface_file]\n");
 } /* -- usage -- */

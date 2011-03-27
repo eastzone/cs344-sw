@@ -29,15 +29,23 @@
 
 struct sr_instance* sr; /* -- forward declare -- */
 
+void sr_vns_init_log(struct sr_instance* sr, char* logfile);
+
+#ifndef _CPUMODE_
+
 int  sr_vns_read_from_server(struct sr_instance* );
+int sr_read_from_server_expect(struct sr_instance*, int);
 
 int  sr_vns_connected_to_server(struct sr_instance* );
 
-void sr_vns_init_log(struct sr_instance* sr, char* logfile);
-
 int  sr_vns_connect_to_server(struct sr_instance* ,unsigned short , char* );
 
+/**
+ * Returns 0 on success or -1 on error.  Will print an error message to stderr
+ * if -1 is returned.
+ */
 int  sr_vns_send_packet(struct sr_instance* ,uint8_t* , unsigned int , const char*);
 
+#endif /* _CPUMODE */
 
 #endif  /* -- SR_VNS_H -- */

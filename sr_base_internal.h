@@ -31,7 +31,6 @@
 #include <inttypes.h>
 #endif /* _DARWIN_ */
 
-#include <unistd.h>
 #include <stdio.h>
 #include <sys/time.h>
 #include <netinet/in.h>
@@ -40,18 +39,26 @@
 
 #define CPU_HW_FILENAME "cpuhw"
 
+#ifndef _MANUAL_MODE_
+int main(int argc, char** argv);
+#else
+int original_main(int argc, char** argv);
+#endif
+
 /* -- gcc specific vararg macro support ... but its so nice! -- */
 #ifdef _DEBUG_
-#define Debug(x, args...) printf(x, ## args)
+#define Debug(x, args...) fprintf(stderr,x, ## args)
 #define DebugIP(x) \
-  do { struct in_addr addr; addr.s_addr = x; printf("%s",inet_ntoa(addr));\
+  do { struct in_addr addr; addr.s_addr = x; fprintf(stderr,"%s",inet_ntoa(addr));\
      } while(0)
 #define DebugMAC(x) \
-  do { int ivyl; for(ivyl=0; ivyl<5; ivyl++) printf("%02x:", \
-  (unsigned char)(x[ivyl])); printf("%02x",(unsigned char)(x[5])); } while (0)
+  do { int ivyl; for(ivyl=0; ivyl<5; ivyl++) fprintf(stderr,"%02x:", \
+  (unsigned char)(x[ivyl])); fprintf(stderr,"%02x",(unsigned char)(x[5])); } while (0)
 #else
 #define Debug(x, args...) do{}while(0)
-#define DebugMAC(x) do{}while(0)
+#define DebugMAC(x) \
+  do { int ivyl; for(ivyl=0; ivyl<5; ivyl++) fprintf(stderr,"%02x:", \
+  (unsigned char)(x[ivyl])); fprintf(stderr,"%02x",(unsigned char)(x[5])); } while (0)
 #endif
 
 /* ----------------------------------------------------------------------------
@@ -65,7 +72,7 @@ struct sr_vns_if
 {
     char name[SR_NAMELEN];
     unsigned char addr[6];
-    uint32_t ip;
+    uint32_t ip; /* nbo? */
     uint32_t mask;
     uint32_t speed;
 };
@@ -84,7 +91,10 @@ struct sr_instance
     char user[32];  /* user name */
     char vhost[32]; /* host name */
     char lhost[32]; /* host name of machine running client */
+    char template[30]; /* template name if any */
+    char auth_key_fn[64]; /* auth key filename */
     char rtable[32];/* filename for routing table          */
+    char server[32];
     unsigned short topo_id; /* topology id */
     struct sockaddr_in sr_addr; /* address to server */
     FILE* logfile; /* file to log all received/sent packets to */
@@ -113,11 +123,14 @@ struct sr_instance* sr_get_global_instance(struct sr_instance* sr);
 void sr_integ_init(struct sr_instance* );
 void sr_integ_hw_setup(struct sr_instance* ); /* called after hwinfo */
 void sr_integ_destroy(struct sr_instance* );
-void sr_integ_close(struct sr_instance* sr);
 void sr_integ_input(struct sr_instance* sr,
                    const uint8_t * packet/* borrowed */,
                    unsigned int len,
-                   const char* interface/* borrowed */);
+#ifdef _CPUMODE_
+                    interface_t* intf );
+#else
+                    const char* interface );
+#endif
 void sr_integ_add_interface(struct sr_instance*,
                             struct sr_vns_if* /* borrowed */);
 
@@ -132,10 +145,6 @@ uint32_t sr_integ_ip_output(uint8_t* payload /* given */,
                             uint32_t src, /* nbo */
                             uint32_t dest, /* nbo */
                             int len);
-int sr_integ_low_level_output(struct sr_instance* sr /* borrowed */,
-                             uint8_t* buf /* borrowed */ ,
-                             unsigned int len,
-                             const char* iface /* borrowed */);
 uint32_t sr_integ_findsrcip(uint32_t dest /* nbo */);
 
 

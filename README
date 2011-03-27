@@ -1,7 +1,19 @@
 File: README
 Date: Tue Feb 03 15:57:46 PST 2004 
-Last Modified: Wed Apr 04 06:18:07 PDT 2007 
-Author: Martin Casado
+Last Modified: Sat Mar 26 21:23:45 PDT 2011
+Author: Martin Casado / James Hongyi Zeng
+
+///////////////////////////////////
+// Greetings from your CS344 staff
+///////////////////////////////////
+Please read instructions on course website [http://yuba.stanford.edu/cs344/sw/basic-router/].
+It's highly recommended that you get familiar with VNS by reading through Simple Router
+assignment at http://yuba.stanford.edu/vns/assignments/simple-router/ before hacking :-)
+
+Good luck! 
+///////////////////////////////////
+// End of Greetings
+///////////////////////////////////
 
 This directory contains the code base for developing a functional 
 internet router that supports TCP and user level programs. 

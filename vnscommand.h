@@ -1,12 +1,8 @@
 /*-----------------------------------------------------------------------------
    File:   vnscommand.h
-   Date:   Sat Apr 06 21:58:07 PST 2002
-   Contact:  casado@stanford.edu
-
-   Description:
-
-   A c-style declaration of commands for the virtual router.
-
+   Date:   Sun Oct 11 20:27 PST 2009
+   Contact:  dgu@cs.stanford.edu
+   Description: A c-style declaration of commands for the virtual router.
   ---------------------------------------------------------------------------*/
 
 #ifndef __VNSCOMMAND_H
@@ -136,5 +132,65 @@ typedef struct
     c_hw_entry mHWInfo[MAXHWENTRIES];
 }__attribute__ ((__packed__)) c_hwinfo;
 
+
+/* ******* New VNS Messages ******** */
+#define VNS_RTABLE        32
+#define VNS_OPEN_TEMPLATE 64
+#define VNS_AUTH_REQUEST 128
+#define VNS_AUTH_REPLY   256
+#define VNS_AUTH_STATUS  512
+
+/* rtable */
+typedef struct
+{
+    uint32_t mLen;
+    uint32_t mType;
+    char     mVirtualHostID[IDSIZE];
+    char     rtable[0];
+}__attribute__ ((__packed__)) c_rtable;
+
+/* open template */
+typedef struct {
+    uint32_t ip;
+    uint8_t  num_masked_bits;
+}__attribute__ ((__packed__)) c_src_filter;
+
+typedef struct
+{
+    uint32_t     mLen;
+    uint32_t     mType;
+    char         templateName[30];
+    char         mVirtualHostID[IDSIZE];
+    c_src_filter srcFilters[0];
+}__attribute__ ((__packed__)) c_open_template;
+
+/* authentication request */
+typedef struct
+{
+    uint32_t mLen;
+    uint32_t mType;
+    uint8_t  salt[0];
+
+}__attribute__ ((__packed__)) c_auth_request;
+
+/* authentication reply */
+typedef struct
+{
+    uint32_t mLen;
+    uint32_t mType;
+    uint32_t usernameLen;
+    char     username[0];
+    /* remainder of the message is the salted sha1 of the user's password */
+}__attribute__ ((__packed__)) c_auth_reply;
+
+/* authentication status (whether or not a reply was accepted) */
+typedef struct
+{
+    uint32_t mLen;
+    uint32_t mType;
+    uint8_t  auth_ok;
+    char     msg[0];
+
+}__attribute__ ((__packed__)) c_auth_status;
 
 #endif  /* __VNSCOMMAND_H */
