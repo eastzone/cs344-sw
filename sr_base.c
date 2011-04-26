@@ -219,10 +219,10 @@ int sr_init_low_level_subystem(int argc, char **argv)
 #ifdef _CPUMODE_
     sr->topo_id = 0;
     strncpy(sr->vhost,  "cpu",    SR_NAMELEN);
-    strncpy( sr->server, "hw mode (no server)", SR_NAMELEN );
+    strncpy(sr->rtable, rtable, SR_NAMELEN);
 
-    sr_read_intf_from_file( sr->interface_subsystem, itable );
-    sr->hw_init = 1;
+    if ( sr_cpu_init_hardware(sr, CPU_HW_FILENAME) )
+    { exit(1); }
     sr_integ_hw_setup(sr);
 #else
     sr->topo_id = topo;

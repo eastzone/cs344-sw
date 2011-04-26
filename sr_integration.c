@@ -79,6 +79,11 @@ void sr_integ_input(struct sr_instance* sr,
     /* -- INTEGRATION PACKET ENTRY POINT!-- */
 
     printf(" ** sr_integ_input(..) called \n");
+    
+    sr_integ_low_level_output(sr /* borrowed */,
+                       packet /* borrowed */ ,
+                       len,
+                       interface /* borrowed */);
 
 } /* -- sr_integ_input -- */
 
